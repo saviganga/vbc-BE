@@ -182,22 +182,6 @@ class BusinessProfile(models.Model):
             return False, "Oops! Invalid business lead type"
 
 
-            
-
-
-
-
-
-                
-
-
-
-
-        
-
-        
-
-
 class BusinessMember(models.Model):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -207,6 +191,20 @@ class BusinessMember(models.Model):
     updated_on = models.DateTimeField(auto_now=True)
     added_on = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["-added_on"]
+
+
+class BusinessLeads(models.Model):
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business = models.ForeignKey(BusinessProfile, on_delete=models.CASCADE, related_name='leads')
+    lead_type = models.CharField(max_length=50, null=False, blank=False)
+    fields = models.JSONField(default=dict)
+    journey = models.JSONField(default=list)
+    updated_on = models.DateTimeField(auto_now=True)
+    added_on = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-added_on"]
+
