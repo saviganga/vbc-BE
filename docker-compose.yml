@@ -1,0 +1,11 @@
+version: "3.3"
+
+services:
+  app:
+    build: ./nfcBE
+    container_name: "nfc_backend"
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./nfcBE:/usr/src/app
+    ports:
+      - "8000:8000"
