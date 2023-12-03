@@ -108,11 +108,8 @@ class BusinessProfile(models.Model):
                     self.save()
                     return True, self.configuration.get('business_leads')
                 else:
-                    pass
+                    return False, "Invalid action"
 
-                
-
-            
             else: # we are trying to add a new field
 
                 validated_data.get('lead_field')['default'] = False
@@ -150,15 +147,10 @@ class BusinessProfile(models.Model):
             # get the field with the key
             field = next((f for f in business_lead_workflow if f.get('status').upper() == validated_data.get('lead_flow').get('status').upper()), None)
             if field is not None:
-
-                # # check if default field
-                # if field.get('default'):
-                #     return False, "Oops! You cannot edit a default field"
                 
                 if action == "CREATE":
                 # field['default'] = False
                     business_lead_workflow.remove(field)
-                    # validated_data.get('lead_field')['default'] = False
                     business_lead_workflow.insert(0, validated_data.get('lead_flow'))
                     business_leads.remove(business_lead)
                     business_lead['workflow'] = business_lead_workflow
@@ -175,15 +167,10 @@ class BusinessProfile(models.Model):
                     self.save()
                     return True, self.configuration.get('business_leads')
                 else:
-                    pass
+                    return False, "Invalid action"
 
-                
-
-            
             else: # we are trying to add a new field
 
-                # validated_data.get('lead_field')['default'] = False
-                # validated_data.get('lead_field')['key'] = '_'.join(validated_data.get('lead_field').get('name').lower().split(' '))
                 business_lead_workflow.insert(0, validated_data.get('lead_flow'))
                 business_leads.remove(business_lead)
                 business_lead['workflow'] = business_lead_workflow
