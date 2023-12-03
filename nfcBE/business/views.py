@@ -252,6 +252,51 @@ class BusinessProfileViewSet(ModelViewSet):
         return Response(data=data, status=status.HTTP_200_OK)
         
 
+    @action(methods=["post"], detail=False)
+    def configure_lead_flow(self, request, pk=None):
+
+        # validate the serializer
+        serializer = business_serializers.BusinessLeadsConfigurationSerializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as serializer_error:
+            return Response(
+                data={
+                    "status": "FAILED",
+                    "message": "Oops! Please check your fields and try again",
+                    "data": serializer.errors
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            business_profile = self.queryset.get(reference=request.headers.get('business'))
+        except Exception as business_profile_error:
+            return Response(
+                data={
+                    "status": "FAILED",
+                    "message": "Oops! Unable to find business profile",
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        is_configured, configured_field = business_profile.configure_business_lead_flow(validated_data=serializer.validated_data, action="CREATE")
+        if not is_configured:
+            return Response(
+                data={
+                    "status": "FAILED",
+                    "message": configured_field,
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        data = {
+                "message": "Business lead configuration successful",
+                "status": "SUCCESS",
+                "data": configured_field,
+            }
+        return Response(data=data, status=status.HTTP_200_OK)
+
 
 
 

@@ -86,6 +86,9 @@ class ConfigureBusinessLeadFields(serializers.Serializer):
     lead_type = serializers.CharField(required=True)
     lead_field = serializers.JSONField(required=True)
 
+# class ConfigureBusinessLeadFlow(serializers.Serializer):
+
+
 
 class BusinessMemberSerializer(serializers.ModelSerializer):
 
