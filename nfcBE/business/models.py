@@ -30,6 +30,19 @@ class BusinessProfile(models.Model):
         if validated_data.get('lead_flow', None) is None or len(validated_data.get('lead_flow')) < 1:
             return False, "Oops! Lead flow cannot be blank"
         
+        initiated = next((wf for wf in validated_data.get('lead_flow') if wf.get('status').upper() == 'INITIATED'), None)
+        if initiated is not None:
+            validated_data.get('lead_flow').remove(initiated)
+        else:
+            pass
+
+        validated_data.get('lead_flow').append(
+            {
+                "status": "INITIATED",
+                "description": "Lead generated"
+            }
+        )
+        
         # update the model
         if self.configuration.get('business_leads', None) is None or len(self.configuration.get('business_leads')) < 1:
             self.configuration['business_leads'] = [
@@ -202,6 +215,7 @@ class BusinessLeads(models.Model):
     lead_type = models.CharField(max_length=50, null=False, blank=False)
     fields = models.JSONField(default=dict)
     journey = models.JSONField(default=list)
+    assignee = models.ForeignKey(BusinessMember, on_delete=models.SET_NULL, null=True, blank=True)
     updated_on = models.DateTimeField(auto_now=True)
     added_on = models.DateTimeField(auto_now_add=True)
 

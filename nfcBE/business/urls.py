@@ -8,6 +8,7 @@ router = routers.DefaultRouter()
 
 router.register(r"business", business_views.BusinessProfileViewSet, basename="business")
 router.register(r"business-member", business_views.BusinessMemberViewSet, basename="business-member")
+router.register(r"business-leads", business_views.BusinessLeadsViewSet, basename="business-leads")
 
 urlpatterns = [
     

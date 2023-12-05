@@ -75,19 +75,6 @@ class BusinessProfileViewSet(ModelViewSet):
         else:
             return self.queryset.none()
 
-            
-        # check if the user is the business owner
-        # if self.request.user.is_business:
-        #     return self.queryset.filter(user=self.request.user)
-        # else:
-        #     if self.request.user.is_business_member:
-        #         # check if the nigga is a member of the business
-        #         is_business_member , business_member_businesses = business_utils.BusinessProfileUtils().get_business_member_businesses(user=self.request.user)
-        #         if not is_business_member:
-        #             return self.queryset.none()
-        #         return business_member_businesses
-        #     else:
-        #         return self.queryset.none()
         
 
     def list(self, request, *args, **kwargs):
@@ -488,8 +475,94 @@ class BusinessMemberViewSet(ModelViewSet):
         return Response(data=data, status=status.HTTP_201_CREATED)
         
         
+class BusinessLeadsViewSet(ModelViewSet):
 
+    queryset = business_models.BusinessLeads.objects.all()
+    serializer_class = business_serializers.BusinessLeadsSerializer
 
+    def get_queryset(self):
+
+        # staff/admin
+        if self.request.user.is_staff and 'admin' in self.request.headers:
+            return self.queryset.all()
+        
+        if 'business' in self.request.headers:
+            # get the business
+            is_business, business_profile = business_utils.BusinessProfileUtils().get_business_from_reference(reference=self.request.headers.get('business'))
+            if not is_business:
+                return self.queryset.none()
+            
+            # check if the user is a business member
+            is_business_member, business_member = business_utils.BusinessProfileUtils().check_is_business_member(user=self.request.user, business_ref=self.request.headers.get('business'))
+            if not is_business_member:
+                return self.queryset.none()
+            
+            return self.queryset.filter(business__reference=self.request.headers.get('business'))
+        else:
+            return self.queryset.none()
+        
+    def list(self, request, *args, **kwargs):
+        
+        try:
+
+            queryset = self.filter_queryset(self.get_queryset())
+
+            serializer = business_serializers.ReadBusinessLeadsSerializer(queryset, many=True)
+
+            data = {
+                "message": "Successfully fetched business leads",
+                "status": "SUCCESS",
+                "data": serializer.data,
+            }
+            return Response(data)
+        except Exception as e:
+            print(e)
+            return Response(
+                data={
+                    "status": "FAILED",
+                    "message": "Unauthenticated User"
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+    def create(self, request, *args, **kwargs):
+
+        # fill the serializer
+        if request.data.get('business', None) is None:
+            request.data['business'] = request.headers.get('business')
+
+        # validate the serializer
+        serializer = self.serializer_class(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as serializer_error:
+            return Response(
+                data={
+                    "status": "FAILED",
+                    "message": "Oops! Please check your fields and try again",
+                    "data": serializer.errors
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        is_created, business_lead = serializer.create(validated_data=serializer.validated_data)
+        if not is_created:
+             return Response(
+                data={
+                    "status": "FAILED",
+                    "message": business_lead,
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        data = {
+                "message": "Successfully created business lead",
+                "status": "SUCCESS",
+                "data": business_lead,
+            }
+        return Response(data)
+        
+    
 
             
         
