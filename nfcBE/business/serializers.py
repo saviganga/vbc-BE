@@ -2,6 +2,7 @@ from rest_framework import serializers
 from business import models as business_models
 from userapp import models as user_models
 from django.db.models import Q
+from django.utils import timezone
 
 class BusinessProfileSerializer(serializers.ModelSerializer):
 
@@ -158,4 +159,116 @@ class ReadBusinessMemberSerializer(serializers.ModelSerializer):
             return None
 
 
+class BusinessLeadsSerializer(serializers.ModelSerializer):
 
+    business = serializers.CharField(required=True)
+    fields = serializers.JSONField(required=True)
+
+    class Meta:
+        model = business_models.BusinessLeads
+        fields = ['id', 'business', 'lead_type', 'fields', 'journey', 'assignee', "added_on", 'updated_on']
+
+    def create(self, validated_data):
+
+        print(validated_data)
+
+        # get the business
+        try:
+            business_profile = business_models.BusinessProfile.objects.get(reference=validated_data.get('business'))
+        except Exception as business_profile_error:
+            return False, 'Oops! Business profile with this reference not found'
+
+        # check that lead type is from the business
+        business_leads_config = next((lead_config for lead_config in business_profile.configuration.get('business_leads') if lead_config.get('type').upper() == validated_data.get('lead_type').upper() ), None)
+        if business_leads_config is None:
+            return False, "Oops! 'lead_type' not found"
+        
+        # handle the fields
+        if type(validated_data.get('fields')) != dict:
+            return False, "Invalid fields format"
+        
+        for field_key in list(validated_data.get('fields').keys()):
+            if field_key not in [k.get('key') for k in business_leads_config.get('fields')]:
+                validated_data.get('fields').pop(field_key)
+            else:
+                continue
+
+        if len(list(validated_data.get('fields').keys())) < 1:
+            return False, "Please fill in the lead fields"
+
+        lead_journey = [
+            {
+                "status": "INITIATED",
+                "business_member": "",
+                "time": str(timezone.now()),
+                "comment": ""
+            }
+        ]
+
+        validated_data['journey'] = lead_journey
+        validated_data.pop('business')
+
+        try:
+            business_lead = self.Meta.model.objects.create(**validated_data, business=business_profile)
+        except Exception as business_lead_error:
+            print(business_lead_error)
+            return False, "Unable to create business lead"
+        
+        return True, {
+            "id": str(business_lead.id),
+            "business": {
+                "id": str(business_lead.business.id),
+                "name": business_lead.business.name,
+                "reference": business_lead.business.reference
+            },
+            "assignee": business_lead.assignee,
+            "fields": business_lead.fields,
+            "journey": business_lead.journey,
+            "added_on": str(business_lead.added_on),
+            "updated_on": str(business_lead.updated_on)
+        }
+    
+
+class ReadBusinessLeadsSerializer(serializers.ModelSerializer):
+
+    business = serializers.SerializerMethodField()
+    assignee = serializers.SerializerMethodField()
+
+    class Meta:
+        model = business_models.BusinessLeads
+        fields = ['id', 'business', 'lead_type', 'fields', 'journey', 'assignee', "added_on", 'updated_on']
+
+    def get_business(self, obj):
+
+        return {
+            "id": str(obj.business.id),
+            "name": obj.business.name,
+            "reference": obj.business.reference
+        }
+
+    def get_assignee(self, obj):
+
+        if obj.assignee:
+            return {
+                "id": str(obj.assignee.id),
+                "user": {
+                    "id": str(obj.assignee.user.id),
+                    "first_name": obj.assignee.user.first_name,
+                    "last_name": obj.assignee.user.last_name,
+                    "email": obj.assignee.user.email
+                }
+            }
+
+
+class BusinessProfileAnalyticsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = business_models.BusinessProfileAnalytics
+        fields = "__all__"
+
+
+class BusinessMemberAnalyticsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = business_models.BusinessMemberAnalytics
+        fields = "__all__"

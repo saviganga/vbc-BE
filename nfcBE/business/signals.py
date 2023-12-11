@@ -20,3 +20,25 @@ def set_user_is_business_member_true(sender, instance, created, **kwargs):
     if created:
         instance.user.is_business_member = True
         instance.user.save()
+
+
+@receiver(signals.post_save, sender=business_models.BusinessProfile)
+def create_business_profile_analytics(sender, instance, created, **kwargs):
+    if created:
+        try:
+            analytics = business_models.BusinessProfileAnalytics.objects.create(
+                business=instance
+            )
+        except Exception:
+            pass
+
+
+@receiver(signals.post_save, sender=business_models.BusinessMember)
+def create_business_member_analytics(sender, instance, created, **kwargs):
+    if created:
+        try:
+            analytics = business_models.BusinessMemberAnalytics.objects.create(
+                business_member=instance
+            )
+        except Exception:
+            pass
