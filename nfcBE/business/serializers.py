@@ -258,3 +258,17 @@ class ReadBusinessLeadsSerializer(serializers.ModelSerializer):
                     "email": obj.assignee.user.email
                 }
             }
+
+
+class BusinessProfileAnalyticsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = business_models.BusinessProfileAnalytics
+        fields = "__all__"
+
+
+class BusinessMemberAnalyticsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = business_models.BusinessMemberAnalytics
+        fields = "__all__"

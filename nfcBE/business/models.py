@@ -42,6 +42,19 @@ class BusinessProfile(models.Model):
                 "description": "Lead generated"
             }
         )
+
+        converted = next((wf for wf in validated_data.get('lead_flow') if wf.get('status').upper() == 'CONVERTED'), None)
+        if converted is not None:
+            validated_data.get('lead_flow').remove(converted)
+        else:
+            pass
+
+        validated_data.get('lead_flow').append(
+            {
+                "status": "CONVERTED",
+                "description": "Lead converted"
+            }
+        )
         
         # update the model
         if self.configuration.get('business_leads', None) is None or len(self.configuration.get('business_leads')) < 1:
@@ -215,10 +228,32 @@ class BusinessLeads(models.Model):
     lead_type = models.CharField(max_length=50, null=False, blank=False)
     fields = models.JSONField(default=dict)
     journey = models.JSONField(default=list)
-    assignee = models.ForeignKey(BusinessMember, on_delete=models.SET_NULL, null=True, blank=True)
+    assignee = models.ForeignKey(BusinessMember, on_delete=models.SET_NULL, null=True, blank=True, related_name='leads')
     updated_on = models.DateTimeField(auto_now=True)
     added_on = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-added_on"]
 
+
+class BusinessProfileAnalytics(models.Model):
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business = models.OneToOneField(BusinessProfile, on_delete=models.CASCADE, related_name='analytics')
+    team_members = models.IntegerField(default=0)
+    leads = models.IntegerField(default=0)
+    converted_leads = models.IntegerField(default=0)
+    updated_on = models.DateTimeField(auto_now=True)
+    added_on = models.DateTimeField(auto_now_add=True)
+    
+
+
+class BusinessMemberAnalytics(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # business = models.OneToOneField(BusinessProfile, on_delete=models.CASCADE, related_name='analytics')
+    business_member = models.OneToOneField(BusinessMember, on_delete=models.CASCADE, related_name='analytics')
+    leads = models.IntegerField(default=0)
+    converted_leads = models.IntegerField(default=0)
+    updated_on = models.DateTimeField(auto_now=True)
+    added_on = models.DateTimeField(auto_now_add=True)
+     

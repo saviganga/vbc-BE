@@ -563,7 +563,106 @@ class BusinessLeadsViewSet(ModelViewSet):
         return Response(data)
         
     
+class BusinessProfileAnalyticsViewSet(ModelViewSet):
 
+    queryset = business_models.BusinessProfileAnalytics.objects.all()
+    serializer_class = business_serializers.BusinessProfileAnalyticsSerializer
+
+    def get_queryset(self):
+
+        # staff/admin
+        if self.request.user.is_staff and 'admin' in self.request.headers:
+            return self.queryset.all()
+        
+        if 'business' in self.request.headers:
+            # get the business
+            is_business, business_profile = business_utils.BusinessProfileUtils().get_business_from_reference(reference=self.request.headers.get('business'))
+            if not is_business:
+                return self.queryset.none()
+            
+            # check if the user is a business member
+            is_business_member, business_member = business_utils.BusinessProfileUtils().check_is_business_member(user=self.request.user, business_ref=self.request.headers.get('business'))
+            if not is_business_member:
+                return self.queryset.none()
+            
+            return self.queryset.filter(business__reference=self.request.headers.get('business'))
+        else:
+            return self.queryset.none()
+        
+    def list(self, request, *args, **kwargs):
+        
+        try:
+
+            queryset = self.filter_queryset(self.get_queryset())
+
+            serializer = self.serializer_class(queryset, many=True)
+
+            data = {
+                "message": "Successfully fetched business analytics",
+                "status": "SUCCESS",
+                "data": serializer.data,
+            }
+            return Response(data)
+        except Exception as e:
+            print(e)
+            return Response(
+                data={
+                    "status": "FAILED",
+                    "message": "Unauthenticated User"
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+
+class BusinessMembernalyticsViewSet(ModelViewSet):
+
+    queryset = business_models.BusinessMemberAnalytics.objects.all()
+    serializer_class = business_serializers.BusinessMemberAnalyticsSerializer
+
+    def get_queryset(self):
+
+        # staff/admin
+        if self.request.user.is_staff and 'admin' in self.request.headers:
+            return self.queryset.all()
+        
+        if 'business' in self.request.headers:
+            # get the business
+            is_business, business_profile = business_utils.BusinessProfileUtils().get_business_from_reference(reference=self.request.headers.get('business'))
+            if not is_business:
+                return self.queryset.none()
+            
+            # check if the user is a business member
+            is_business_member, business_member = business_utils.BusinessProfileUtils().check_is_business_member(user=self.request.user, business_ref=self.request.headers.get('business'))
+            if not is_business_member:
+                return self.queryset.none()
+            
+            return self.queryset.filter(business_member__business__reference=self.request.headers.get('business'))
+        else:
+            return self.queryset.none()
+        
+    def list(self, request, *args, **kwargs):
+        
+        try:
+
+            queryset = self.filter_queryset(self.get_queryset())
+
+            serializer = self.serializer_class(queryset, many=True)
+
+            data = {
+                "message": "Successfully fetched business member analytics",
+                "status": "SUCCESS",
+                "data": serializer.data,
+            }
+            return Response(data)
+        except Exception as e:
+            print(e)
+            return Response(
+                data={
+                    "status": "FAILED",
+                    "message": "Unauthenticated User"
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
             
         
 
